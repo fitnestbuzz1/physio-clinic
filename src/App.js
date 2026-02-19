@@ -802,12 +802,13 @@ const css = `
 // ── Data seeds ─────────────────────────────────────────────────────────────────
 
 const THERAPISTS = [
-  { id: 1, name: "Dr. Arjun Mehta",    spec: "Sports Rehabilitation",  color: "#00c9a7", apts: 142, patients: 38 },
-  { id: 2, name: "Dr. Priya Shah",     spec: "Neurological Physio",    color: "#58a6ff", apts: 118, patients: 32 },
-  { id: 3, name: "Dr. Rohan Patel",    spec: "Orthopedic Physio",      color: "#d29922", apts: 135, patients: 41 },
-  { id: 4, name: "Dr. Sneha Joshi",    spec: "Pediatric Physio",       color: "#f85149", apts: 96,  patients: 28 },
-  { id: 5, name: "Dr. Kiran Desai",    spec: "Geriatric Physio",       color: "#a5d6ff", apts: 109, patients: 35 },
-  { id: 6, name: "Dr. Meera Gupta",    spec: "Post-Surgical Rehab",    color: "#3fb950", apts: 88,  patients: 24 },
+  { id: 1, name: "Krunal Patel",       spec: "Physiotherapist | Owner",   color: "#00c9a7", apts: 142, patients: 38 },
+  { id: 2, name: "Ritesh Nayak",       spec: "Physiotherapist | Owner",   color: "#58a6ff", apts: 118, patients: 32 },
+  { id: 3, name: "Harsh Shah",         spec: "Physiotherapist | Owner",   color: "#d29922", apts: 135, patients: 41 },
+  { id: 4, name: "Ruchika Ray",        spec: "Physiotherapist | Partner", color: "#f85149", apts: 96,  patients: 28 },
+  { id: 5, name: "Krishna Bhatt",      spec: "Physiotherapist | Partner", color: "#a5d6ff", apts: 109, patients: 35 },
+  { id: 6, name: "Hajar Ghaderiniri", spec: "Physiotherapist",           color: "#3fb950", apts: 88,  patients: 24 },
+  { id: 7, name: "Gayatri Trivedi",    spec: "Physiotherapist",           color: "#c084fc", apts: 72,  patients: 20 },
 ];
 
 const SERVICES = [
@@ -828,14 +829,14 @@ const fmtDate = (s) => new Date(s).toLocaleDateString("en-IN", { day:"2-digit", 
 function genId() { return Math.random().toString(36).slice(2, 9); }
 
 const INIT_PATIENTS = [
-  { id: genId(), name: "Rahul Sharma",    phone: "9876543210", email: "rahul@email.com", dob: "1988-04-15", gender: "Male",   address: "12, MG Road, Surat", condition: "Knee Ligament Tear",       therapistId: 1, createdAt: "2025-11-01" },
-  { id: genId(), name: "Anita Verma",     phone: "9765432109", email: "anita@email.com", dob: "1975-09-22", gender: "Female", address: "45, Ring Road, Surat",  condition: "Cervical Spondylosis",     therapistId: 2, createdAt: "2025-11-15" },
-  { id: genId(), name: "Suresh Patel",    phone: "9654321098", email: "suresh@email.com",dob: "1960-12-03", gender: "Male",   address: "8, Citylight, Surat",   condition: "Frozen Shoulder",          therapistId: 3, createdAt: "2025-12-01" },
-  { id: genId(), name: "Pooja Nair",      phone: "9543210987", email: "pooja@email.com", dob: "1995-06-18", gender: "Female", address: "22, Adajan, Surat",     condition: "Lower Back Pain",          therapistId: 1, createdAt: "2025-12-10" },
-  { id: genId(), name: "Vikram Singh",    phone: "9432109876", email: "vikram@email.com",dob: "1982-01-30", gender: "Male",   address: "5, Pal, Surat",         condition: "Post ACL Surgery",         therapistId: 3, createdAt: "2026-01-05" },
-  { id: genId(), name: "Divya Iyer",      phone: "9321098765", email: "divya@email.com", dob: "1990-07-11", gender: "Female", address: "33, Katargam, Surat",   condition: "Sciatica",                 therapistId: 2, createdAt: "2026-01-12" },
-  { id: genId(), name: "Mahesh Kumar",    phone: "9210987654", email: "mahesh@email.com",dob: "1955-03-25", gender: "Male",   address: "17, Vesu, Surat",       condition: "Arthritis Rehabilitation", therapistId: 5, createdAt: "2026-01-20" },
-  { id: genId(), name: "Geeta Pandya",    phone: "9109876543", email: "geeta@email.com", dob: "1978-11-08", gender: "Female", address: "7, Althan, Surat",      condition: "Post Stroke Rehab",        therapistId: 2, createdAt: "2026-02-01" },
+  { id: genId(), name: "Rahul Sharma",    phone: "9876543210", email: "rahul@email.com", dob: "1988-04-15", gender: "Male",   address: "123 Jagare Ridge Blvd, Edmonton", condition: "Knee Ligament Tear",       therapistId: 1, createdAt: "2025-11-01" },
+  { id: genId(), name: "Anita Verma",     phone: "9765432109", email: "anita@email.com", dob: "1975-09-22", gender: "Female", address: "456 Brintnell Blvd, Edmonton",  condition: "Cervical Spondylosis",     therapistId: 2, createdAt: "2025-11-15" },
+  { id: genId(), name: "Suresh Patel",    phone: "9654321098", email: "suresh@email.com",dob: "1960-12-03", gender: "Male",   address: "789 Capilano Road, Edmonton",   condition: "Frozen Shoulder",          therapistId: 3, createdAt: "2025-12-01" },
+  { id: genId(), name: "Pooja Nair",      phone: "9543210987", email: "pooja@email.com", dob: "1995-06-18", gender: "Female", address: "22 Crystallina Nera E, Edmonton",     condition: "Lower Back Pain",          therapistId: 1, createdAt: "2025-12-10" },
+  { id: genId(), name: "Vikram Singh",    phone: "9432109876", email: "vikram@email.com",dob: "1982-01-30", gender: "Male",   address: "5 Heritage Valley Road, Edmonton",         condition: "Post ACL Surgery",         therapistId: 3, createdAt: "2026-01-05" },
+  { id: genId(), name: "Divya Iyer",      phone: "9321098765", email: "divya@email.com", dob: "1990-07-11", gender: "Female", address: "33 Winterburn Road, Edmonton",   condition: "Sciatica",                 therapistId: 2, createdAt: "2026-01-12" },
+  { id: genId(), name: "Mahesh Kumar",    phone: "9210987654", email: "mahesh@email.com",dob: "1955-03-25", gender: "Male",   address: "17 Heritage Valley Way, Edmonton",       condition: "Arthritis Rehabilitation", therapistId: 5, createdAt: "2026-01-20" },
+  { id: genId(), name: "Geeta Pandya",    phone: "9109876543", email: "geeta@email.com", dob: "1978-11-08", gender: "Female", address: "7 Capilano Drive, Edmonton",      condition: "Post Stroke Rehab",        therapistId: 2, createdAt: "2026-02-01" },
 ];
 
 const STATUSES = ["Scheduled", "Completed", "Cancelled", "No-Show"];
@@ -1808,8 +1809,8 @@ export default function App() {
       <div className="app-wrap">
         <aside className="sidebar">
           <div className="logo-area">
-            <div className="logo-title">PhysioClinic</div>
-            <div className="logo-sub">Clinic Management System</div>
+            <div className="logo-title">Stride Physio</div>
+            <div className="logo-sub">Sports & Physiotherapy</div>
           </div>
           <nav className="nav-section">
             <div className="nav-label">Menu</div>
@@ -1825,7 +1826,7 @@ export default function App() {
           </nav>
           <div className="sidebar-footer">
             <div className="clinic-badge">
-              <strong>Surat Physio Centre</strong>
+              <strong>Stride Sports & Physiotherapy</strong>
               {THERAPISTS.length} Therapists · {patients.length} Patients
             </div>
           </div>
