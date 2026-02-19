@@ -1,5 +1,37 @@
 import { useState, useEffect } from "react";
 
+// ── Supabase connection ────────────────────────────────────────────────────────
+const SUPABASE_URL = "https://ufcwpccebgmisnwcmqkn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_zgqp-l-yyd7sjBifU9Jolg_H_t99K_n";
+
+async function sbFetch(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": options.prefer || "return=representation",
+      ...options.headers
+    },
+    ...options
+  });
+  if (!res.ok) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+async function getBookings() {
+  return await sbFetch("bookings?select=*&order=created_at.desc") || [];
+}
+
+async function updateBookingStatus(id, status) {
+  return await sbFetch(`bookings?id=eq.${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status })
+  });
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 // ── Palette & helpers ──────────────────────────────────────────────────────────
 const C = {
   bg: "#0d1117",
@@ -890,7 +922,7 @@ function StatusBadge({ status }) {
 
 // ── Dashboard ──────────────────────────────────────────────────────────────────
 
-function Dashboard({ patients, appointments, bills, therapists }) {
+function Dashboard({ patients, appointments, bills, therapists, liveBookings = [] }) {
   const todayStr = fmt(TODAY);
   const todayApts = appointments.filter(a => a.date === todayStr);
   const totalRevenue = bills.filter(b => b.paid).reduce((s, b) => s + b.amount, 0);
@@ -919,6 +951,7 @@ function Dashboard({ patients, appointments, bills, therapists }) {
           { icon: "📅", label: "Today's Appointments", value: todayApts.length, change: `${todayApts.filter(a=>a.status==="Completed").length} completed`, up: true, color: C.blue },
           { icon: "💰", label: "Revenue Collected", value: `₹${(totalRevenue/1000).toFixed(1)}K`, change: "This period", up: true, color: C.success },
           { icon: "⏳", label: "Pending Payments", value: `₹${(pending/1000).toFixed(1)}K`, change: `${bills.filter(b=>!b.paid).length} invoices`, up: false, color: C.warn },
+          { icon: "🌐", label: "New Online Bookings", value: liveBookings.filter(b=>b.status==="Scheduled").length, change: "From your website", up: true, color: C.blue },
         ].map((s, i) => (
           <div className="stat-card" key={i} style={{ "--accent-color": s.color }}>
             <div className="stat-icon">{s.icon}</div>
@@ -1611,6 +1644,127 @@ function Reports({ patients, appointments, bills, therapists }) {
   );
 }
 
+
+// ── Online Bookings (from website) ────────────────────────────────────────────
+function OnlineBookings({ liveBookings, loadingBookings, setLiveBookings, setNewCount }) {
+  const [tab, setTab] = useState("All");
+  const [search, setSearch] = useState("");
+
+  const filtered = liveBookings.filter(b => {
+    const matchSearch = b.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
+                        b.phone?.includes(search);
+    if (tab === "New") return matchSearch && b.status === "Scheduled";
+    if (tab === "Confirmed") return matchSearch && b.status === "Confirmed";
+    if (tab === "Done") return matchSearch && b.status === "Completed";
+    return matchSearch;
+  });
+
+  async function updateStatus(id, status) {
+    await updateBookingStatus(id, status);
+    setLiveBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
+    setNewCount(prev => status === "Confirmed" ? Math.max(0, prev - 1) : prev);
+  }
+
+  const newCount = liveBookings.filter(b => b.status === "Scheduled").length;
+
+  return (
+    <div>
+      <div className="section-header">
+        <div>
+          <span className="section-title">🌐 Online Bookings from Website</span>
+          <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>
+            Live bookings submitted by patients from your booking website · Auto-refreshes every 30s
+          </div>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          {newCount > 0 && (
+            <div style={{ background:`${C.danger}20`, border:`1px solid ${C.danger}40`, borderRadius:8, padding:"6px 14px", fontSize:12, color:C.danger, fontWeight:600 }}>
+              🔔 {newCount} new booking{newCount>1?"s":""} need attention
+            </div>
+          )}
+        </div>
+      </div>
+
+      {loadingBookings ? (
+        <div style={{ textAlign:"center", padding:60, color:C.muted }}>
+          <div style={{ fontSize:32, marginBottom:12 }}>⏳</div>
+          <div>Loading bookings from database...</div>
+        </div>
+      ) : liveBookings.length === 0 ? (
+        <div className="card" style={{ textAlign:"center", padding:60 }}>
+          <div style={{ fontSize:48, marginBottom:16 }}>🌐</div>
+          <div style={{ fontFamily:"Syne,sans-serif", fontSize:18, fontWeight:700, marginBottom:8 }}>No bookings yet</div>
+          <div style={{ color:C.muted, fontSize:14 }}>When patients book from your website, they will appear here instantly.</div>
+          <div style={{ marginTop:20, padding:"12px 20px", background:C.accentDim, borderRadius:10, fontSize:13, color:C.accent, display:"inline-block" }}>
+            Share your booking website link with patients to start receiving bookings!
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="tabs">
+            {["All","New","Confirmed","Done"].map(t => (
+              <button key={t} className={`tab ${tab===t?"active":""}`} onClick={()=>setTab(t)}>
+                {t} {t==="New" && newCount > 0 && <span style={{marginLeft:4,background:C.danger,color:"white",borderRadius:"50%",padding:"1px 5px",fontSize:10}}>{newCount}</span>}
+              </button>
+            ))}
+          </div>
+
+          <div className="search-bar">
+            <span className="search-icon">🔍</span>
+            <input placeholder="Search by patient name or phone…" value={search} onChange={e=>setSearch(e.target.value)} />
+          </div>
+
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Reference</th><th>Patient</th><th>Phone</th><th>Service</th><th>Therapist</th><th>Date & Time</th><th>Fee</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                {filtered.map(b => (
+                  <tr key={b.id}>
+                    <td style={{ fontFamily:"monospace", fontSize:11, color:C.accent }}>{b.reference || "—"}</td>
+                    <td>
+                      <div style={{ fontWeight:500 }}>{b.patient_name}</div>
+                      <div style={{ fontSize:11, color:C.muted }}>{b.email || ""}</div>
+                      {b.condition && <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>📋 {b.condition.slice(0,40)}{b.condition.length>40?"…":""}</div>}
+                    </td>
+                    <td>{b.phone}</td>
+                    <td style={{ fontSize:12 }}>{b.service}</td>
+                    <td style={{ fontSize:12, color:C.muted }}>{b.therapist}</td>
+                    <td style={{ fontSize:12 }}>
+                      <div style={{ fontWeight:600 }}>{b.date}</div>
+                      <div style={{ color:C.accent }}>{b.time}</div>
+                    </td>
+                    <td style={{ fontWeight:700, fontFamily:"Syne,sans-serif" }}>₹{b.amount?.toLocaleString("en-IN")}</td>
+                    <td><StatusBadge status={b.status === "Scheduled" ? "Scheduled" : b.status === "Confirmed" ? "Active" : b.status === "Completed" ? "Completed" : "Cancelled"} /></td>
+                    <td>
+                      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                        {b.status === "Scheduled" && (
+                          <button className="btn btn-sm btn-primary" onClick={() => updateStatus(b.id, "Confirmed")}>✓ Confirm</button>
+                        )}
+                        {b.status === "Confirmed" && (
+                          <button className="btn btn-sm btn-outline" onClick={() => updateStatus(b.id, "Completed")} style={{ color:C.success, borderColor:C.success }}>✓ Done</button>
+                        )}
+                        {(b.status === "Scheduled" || b.status === "Confirmed") && (
+                          <button className="btn btn-sm btn-danger" onClick={() => updateStatus(b.id, "Cancelled")}>✕ Cancel</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && (
+              <div className="empty"><div className="empty-icon">🌐</div><div className="empty-text">No bookings in this category</div></div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 // ── App Shell ──────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -1618,16 +1772,35 @@ export default function App() {
   const [patients, setPatients] = useState(INIT_PATIENTS);
   const [appointments, setAppointments] = useState(INIT_APTS);
   const [bills, setBills] = useState(INIT_BILLS);
+  const [liveBookings, setLiveBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [newCount, setNewCount] = useState(0);
+
+  useEffect(() => {
+    async function fetchBookings() {
+      setLoadingBookings(true);
+      const data = await getBookings();
+      if (data) {
+        setNewCount(data.filter(b => b.status === "Scheduled").length);
+        setLiveBookings(data);
+      }
+      setLoadingBookings(false);
+    }
+    fetchBookings();
+    const interval = setInterval(fetchBookings, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const nav = [
-    { id:"dashboard",    icon:"⊞",  label:"Dashboard"     },
-    { id:"patients",     icon:"👥", label:"Patients"       },
-    { id:"appointments", icon:"📅", label:"Appointments"   },
-    { id:"billing",      icon:"💰", label:"Billing"        },
-    { id:"reports",      icon:"📊", label:"Reports"        },
+    { id:"dashboard",    icon:"⊞",  label:"Dashboard"      },
+    { id:"patients",     icon:"👥", label:"Patients"        },
+    { id:"appointments", icon:"📅", label:"Appointments"    },
+    { id:"bookings",     icon:"🌐", label:"Online Bookings" },
+    { id:"billing",      icon:"💰", label:"Billing"         },
+    { id:"reports",      icon:"📊", label:"Reports"         },
   ];
 
-  const pageTitles = { dashboard:"Dashboard", patients:"Patients", appointments:"Appointments", billing:"Billing & Invoicing", reports:"Reports & Analytics" };
+  const pageTitles = { dashboard:"Dashboard", patients:"Patients", appointments:"Appointments", bookings:"Online Bookings", billing:"Billing & Invoicing", reports:"Reports & Analytics" };
 
   return (
     <>
@@ -1643,7 +1816,10 @@ export default function App() {
             {nav.map(n => (
               <div key={n.id} className={`nav-item ${page===n.id?"active":""}`} onClick={()=>setPage(n.id)}>
                 <span className="nav-icon">{n.icon}</span>
-                {n.label}
+                <span style={{flex:1}}>{n.label}</span>
+                {n.id==="bookings" && newCount > 0 && (
+                  <span style={{background:"#f85149",color:"white",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{newCount}</span>
+                )}
               </div>
             ))}
           </nav>
@@ -1664,9 +1840,10 @@ export default function App() {
             </div>
           </div>
           <div className="page-body">
-            {page==="dashboard"    && <Dashboard    patients={patients} appointments={appointments} bills={bills} therapists={THERAPISTS} />}
+            {page==="dashboard"    && <Dashboard    patients={patients} appointments={appointments} bills={bills} therapists={THERAPISTS} liveBookings={liveBookings} />}
             {page==="patients"     && <Patients     patients={patients} setPatients={setPatients} therapists={THERAPISTS} appointments={appointments} />}
             {page==="appointments" && <Appointments appointments={appointments} setAppointments={setAppointments} patients={patients} therapists={THERAPISTS} />}
+            {page==="bookings"     && <OnlineBookings liveBookings={liveBookings} loadingBookings={loadingBookings} setLiveBookings={setLiveBookings} setNewCount={setNewCount} />}
             {page==="billing"      && <Billing      bills={bills} setBills={setBills} patients={patients} appointments={appointments} therapists={THERAPISTS} />}
             {page==="reports"      && <Reports      patients={patients} appointments={appointments} bills={bills} therapists={THERAPISTS} />}
           </div>
